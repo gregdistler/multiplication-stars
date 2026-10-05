@@ -1,0 +1,754 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplication Star Quest</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti for celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts for kid-friendly playful typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .math-font {
+      font-family: 'Nunito', sans-serif;
+    }
+    @keyframes bounce-short {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .animate-bounce-short {
+      animation: bounce-short 0.4s ease infinite;
+    }
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-5deg); }
+      75% { transform: rotate(5deg); }
+    }
+    .animate-wiggle {
+      animation: wiggle 0.35s ease-in-out;
+    }
+    @keyframes pop-in {
+      0% { transform: scale(0.8); opacity: 0; }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop {
+      animation: pop-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    /* Hide spin buttons on number input */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen flex flex-col justify-between text-slate-800 p-3 sm:p-6 select-none">
+
+  <!-- Top Navigation & Sound Toggle -->
+  <header class="max-w-3xl mx-auto w-full flex items-center justify-between pb-3">
+    <div class="flex items-center space-x-2">
+      <span class="text-3xl filter drop-shadow">⭐</span>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-indigo-700 tracking-wide">MathStar Quest</h1>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button id="soundToggleBtn" aria-label="Toggle Sound" class="px-3 py-1.5 rounded-full bg-white shadow-sm border border-indigo-100 hover:bg-indigo-50 text-indigo-600 font-semibold text-sm flex items-center gap-1.5 transition active:scale-95">
+        <span id="soundIcon">🔊</span>
+        <span id="soundText" class="hidden sm:inline">Sound On</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- SCREEN 1: PRE-QUIZ TABLE SELECTION -->
+  <main id="selectionScreen" class="max-w-2xl mx-auto w-full bg-white rounded-3xl shadow-xl p-5 sm:p-8 border-4 border-indigo-200 transition-all">
+    <div class="text-center mb-6">
+      <span class="inline-block bg-indigo-100 text-indigo-800 text-sm font-bold px-4 py-1.5 rounded-full mb-2">
+        3rd Grade Multiplication Challenge
+      </span>
+      <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-800">Choose Your Table!</h2>
+      <p class="text-slate-600 mt-2 text-base sm:text-lg">
+        Pick the multiplication fact you want to conquer today:
+      </p>
+    </div>
+
+    <!-- Table Grid 1 through 12 -->
+    <div class="grid grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4 mb-6" id="tableButtonsGrid">
+      <!-- Buttons 1 to 12 dynamically rendered or static for accessibility -->
+    </div>
+
+    <!-- Rule Explanation Card -->
+    <div id="ruleInfoBox" class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+      <span class="text-2xl">💡</span>
+      <div class="text-sm sm:text-base text-amber-900 leading-snug">
+        <strong id="ruleHeading">Tables 1 through 10:</strong>
+        <p id="ruleBody" class="mt-0.5 text-amber-800">
+          Selected table multiplies up to 10 (e.g. 3 × 1 through 3 × 10).
+          You'll get <strong>36 fast questions</strong> and have <strong>5 minutes</strong> to earn your stars!
+        </p>
+      </div>
+    </div>
+
+    <!-- Start Button -->
+    <div class="text-center">
+      <button id="startQuizBtn" class="w-full sm:w-auto px-10 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xl sm:text-2xl rounded-2xl shadow-lg hover:shadow-xl transform active:scale-95 transition-all">
+        Start My Challenge 🚀
+      </button>
+    </div>
+  </main>
+
+  <!-- SCREEN 2: ACTIVE QUIZ VIEW -->
+  <main id="quizScreen" class="max-w-2xl mx-auto w-full bg-white rounded-3xl shadow-xl p-4 sm:p-7 border-4 border-indigo-200 hidden transition-all">
+    <!-- Top HUD: Progress Bar, Question Counter, Timer -->
+    <div class="flex items-center justify-between gap-2 mb-3">
+      <div class="flex items-center gap-2">
+        <span class="bg-indigo-100 text-indigo-700 font-extrabold text-sm sm:text-base px-3 py-1 rounded-xl">
+          Q <span id="currentQuestionNum">1</span> / 36
+        </span>
+        <!-- Live Stars indicator -->
+        <div class="flex items-center text-amber-400 text-lg sm:text-xl" title="Stars Collected">
+          ⭐ <span id="liveScoreCount" class="font-bold text-slate-700 text-base ml-1">0</span>
+        </div>
+      </div>
+
+      <!-- Timer badge -->
+      <div id="timerContainer" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-black text-lg sm:text-xl bg-slate-100 text-slate-800 border-2 border-slate-200 transition-colors">
+        <span>⏱️</span>
+        <span id="timerText" class="tracking-wider">05:00</span>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="w-full bg-slate-200 rounded-full h-3 mb-6 overflow-hidden">
+      <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-pink-500 h-full w-0 transition-all duration-300"></div>
+    </div>
+
+    <!-- Equation Presentation Box -->
+    <div id="questionContainer" class="bg-indigo-50/70 border-2 border-indigo-100 rounded-3xl py-6 px-4 text-center mb-6 shadow-inner relative">
+      <div id="feedbackBubble" class="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none transition-all duration-300 font-extrabold text-sm px-4 py-1 rounded-full shadow-md">
+        Great Job!
+      </div>
+      
+      <div class="flex items-center justify-center gap-3 sm:gap-4 text-4xl sm:text-6xl font-black text-slate-800 math-font">
+        <span id="numA" class="text-indigo-600">3</span>
+        <span class="text-pink-500">×</span>
+        <span id="numB" class="text-indigo-600">7</span>
+        <span class="text-slate-400">=</span>
+        <span id="pendingAnswer" class="text-emerald-600 underline decoration-indigo-300 underline-offset-8 min-w-[70px] inline-block">?</span>
+      </div>
+    </div>
+
+    <!-- Main Keyboard & Input Area -->
+    <div class="max-w-md mx-auto">
+      <form id="answerForm" onsubmit="return false;" class="mb-4">
+        <div class="relative flex items-center justify-center">
+          <input 
+            type="number" 
+            id="answerInput" 
+            inputmode="numeric" 
+            pattern="[0-9]*" 
+            placeholder="Type answer..." 
+            class="w-full text-center text-3xl font-extrabold py-3 px-4 rounded-2xl border-4 border-indigo-300 focus:border-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-100 transition shadow-inner bg-slate-50"
+            autocomplete="off"
+            autofocus
+          />
+          <button 
+            type="button" 
+            id="submitAnswerBtn" 
+            class="absolute right-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-xl shadow-md transition"
+          >
+            Go ↵
+          </button>
+        </div>
+      </form>
+
+      <!-- Chromebook / Touchscreen Friendly Numeric Keypad -->
+      <div class="grid grid-cols-3 gap-2 sm:gap-3 text-2xl font-bold">
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="1">1</button>
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="2">2</button>
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="3">3</button>
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="4">4</button>
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="5">5</button>
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="6">6</button>
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="7">7</button>
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="8">8</button>
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="9">9</button>
+        <button type="button" id="numClearBtn" class="p-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border-2 border-rose-100 rounded-xl shadow-sm text-lg font-black transition">CLEAR</button>
+        <button type="button" class="numpad-btn p-3 bg-white hover:bg-indigo-50 active:bg-indigo-100 border-2 border-indigo-100 rounded-xl shadow-sm text-indigo-700 transition" data-val="0">0</button>
+        <button type="button" id="numBackBtn" class="p-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border-2 border-amber-100 rounded-xl shadow-sm text-xl font-black transition">⌫</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- SCREEN 3: RESULTS & CELEBRATION -->
+  <main id="resultsScreen" class="max-w-2xl mx-auto w-full bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border-4 border-indigo-200 hidden transition-all text-center">
+    <div id="starAwardDisplay" class="text-6xl sm:text-7xl mb-2 flex justify-center gap-2">
+      <!-- Stars injected dynamically -->
+    </div>
+
+    <h2 id="resultTitle" class="text-3xl sm:text-4xl font-black text-indigo-800 mb-1">Champion!</h2>
+    <p id="resultSubtitle" class="text-slate-600 font-semibold text-lg mb-6">Fantastic effort on your tables!</p>
+
+    <!-- Stat Badges -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+      <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-2xl">
+        <div class="text-xs uppercase text-indigo-500 font-black">Score</div>
+        <div class="text-2xl sm:text-3xl font-black text-indigo-700"><span id="finalScore">0</span> / 36</div>
+      </div>
+      <div class="bg-pink-50 border border-pink-100 p-3 rounded-2xl">
+        <div class="text-xs uppercase text-pink-500 font-black">Accuracy</div>
+        <div class="text-2xl sm:text-3xl font-black text-pink-600" id="finalAccuracy">0%</div>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-2xl col-span-2 sm:col-span-1">
+        <div class="text-xs uppercase text-emerald-500 font-black">Time Taken</div>
+        <div class="text-2xl sm:text-3xl font-black text-emerald-700" id="finalTime">0:00</div>
+      </div>
+    </div>
+
+    <!-- Practice / Missed Questions Area -->
+    <div id="reviewContainer" class="text-left bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 mb-6">
+      <h3 class="font-extrabold text-slate-800 text-base mb-2 flex items-center gap-1.5">
+        <span>📝</span> Facts to Review:
+      </h3>
+      <div id="missedList" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-1">
+        <!-- Injected list of missed questions -->
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+      <button id="retrySameTableBtn" class="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-lg rounded-2xl shadow-md transition active:scale-95">
+        Try This Table Again 🔁
+      </button>
+      <button id="chooseDifferentTableBtn" class="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-lg rounded-2xl border-2 border-slate-300 transition active:scale-95">
+        Pick Another Table 📚
+      </button>
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-slate-400 font-semibold mt-6 py-2">
+    Built for 3rd Grade Superstars • Chromebook Friendly
+  </footer>
+
+  <script>
+    /* Web Audio API Synthesizer - 100% self-contained, no external mp3 assets needed */
+    let audioContext = null;
+    let isSoundMuted = false;
+
+    function initAudio() {
+      if (!audioContext) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          audioContext = new AudioCtx();
+        }
+      }
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.15) {
+      if (isSoundMuted) return;
+      try {
+        initAudio();
+        if (!audioContext) return;
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start();
+        osc.stop(audioContext.currentTime + duration);
+      } catch (e) {
+        // Fallback or audio not allowed yet
+      }
+    }
+
+    function playSuccessChime() {
+      if (isSoundMuted) return;
+      playTone(523.25, 'triangle', 0.12, 0.15); // C5
+      setTimeout(() => playTone(659.25, 'triangle', 0.12, 0.15), 80); // E5
+      setTimeout(() => playTone(783.99, 'triangle', 0.22, 0.2), 160); // G5
+    }
+
+    function playIncorrectSound() {
+      if (isSoundMuted) return;
+      playTone(261.63, 'sawtooth', 0.15, 0.1);
+      setTimeout(() => playTone(220.00, 'sawtooth', 0.25, 0.1), 100);
+    }
+
+    function playGrandTada() {
+      if (isSoundMuted) return;
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        setTimeout(() => playTone(freq, 'triangle', 0.35, 0.2), idx * 110);
+      });
+    }
+
+    const TOTAL_QUESTIONS = 36;
+    const QUIZ_DURATION_SECONDS = 300; // 5 minutes
+
+    const state = {
+      selectedTable: 3,
+      currentQuestionIndex: 0,
+      score: 0,
+      timeRemaining: QUIZ_DURATION_SECONDS,
+      timerInterval: null,
+      questions: [],
+      missedQuestions: [],
+      isQuizActive: false
+    };
+
+    // DOM Elements
+    const selectionScreen = document.getElementById('selectionScreen');
+    const quizScreen = document.getElementById('quizScreen');
+    const resultsScreen = document.getElementById('resultsScreen');
+    const tableButtonsGrid = document.getElementById('tableButtonsGrid');
+    const ruleHeading = document.getElementById('ruleHeading');
+    const ruleBody = document.getElementById('ruleBody');
+    const startQuizBtn = document.getElementById('startQuizBtn');
+    
+    const currentQuestionNumEl = document.getElementById('currentQuestionNum');
+    const liveScoreCountEl = document.getElementById('liveScoreCount');
+    const timerTextEl = document.getElementById('timerText');
+    const timerContainerEl = document.getElementById('timerContainer');
+    const progressBarEl = document.getElementById('progressBar');
+    const questionContainer = document.getElementById('questionContainer');
+    const numAEl = document.getElementById('numA');
+    const numBEl = document.getElementById('numB');
+    const pendingAnswerEl = document.getElementById('pendingAnswer');
+    const answerInput = document.getElementById('answerInput');
+    const submitAnswerBtn = document.getElementById('submitAnswerBtn');
+    const feedbackBubble = document.getElementById('feedbackBubble');
+
+    const resultTitleEl = document.getElementById('resultTitle');
+    const resultSubtitleEl = document.getElementById('resultSubtitle');
+    const starAwardDisplayEl = document.getElementById('starAwardDisplay');
+    const finalScoreEl = document.getElementById('finalScore');
+    const finalAccuracyEl = document.getElementById('finalAccuracy');
+    const finalTimeEl = document.getElementById('finalTime');
+    const reviewContainerEl = document.getElementById('reviewContainer');
+    const missedListEl = document.getElementById('missedList');
+    const retrySameTableBtn = document.getElementById('retrySameTableBtn');
+    const chooseDifferentTableBtn = document.getElementById('chooseDifferentTableBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    const soundText = document.getElementById('soundText');
+
+    function renderTableSelector() {
+      tableButtonsGrid.innerHTML = '';
+      for (let i = 1; i <= 12; i++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.table = i;
+        btn.className = `p-3 sm:p-4 rounded-2xl font-black text-xl sm:text-2xl transition border-4 transform active:scale-95 ${
+          state.selectedTable === i
+            ? 'bg-indigo-600 text-white border-indigo-700 shadow-md scale-105'
+            : 'bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300'
+        }`;
+        btn.innerHTML = `<span>${i}s</span>`;
+        btn.addEventListener('click', () => {
+          initAudio();
+          selectTable(i);
+        });
+        tableButtonsGrid.appendChild(btn);
+      }
+      updateRuleDescription();
+    }
+
+    function selectTable(num) {
+      state.selectedTable = num;
+      // Update UI classes
+      const allBtns = tableButtonsGrid.querySelectorAll('button');
+      allBtns.forEach(b => {
+        const t = parseInt(b.dataset.table);
+        if (t === num) {
+          b.className = 'p-3 sm:p-4 rounded-2xl font-black text-xl sm:text-2xl transition border-4 transform active:scale-95 bg-indigo-600 text-white border-indigo-700 shadow-md scale-105';
+        } else {
+          b.className = 'p-3 sm:p-4 rounded-2xl font-black text-xl sm:text-2xl transition border-4 transform active:scale-95 bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300';
+        }
+      });
+      updateRuleDescription();
+      playTone(440, 'sine', 0.08, 0.1);
+    }
+
+    function updateRuleDescription() {
+      const isExtended = state.selectedTable >= 11;
+      const maxFactor = isExtended ? 12 : 10;
+      ruleHeading.textContent = `Table ${state.selectedTable} Selected!`;
+      ruleBody.innerHTML = `Factors will range from <strong>1 to ${maxFactor}</strong> (e.g., ${state.selectedTable} × ${Math.min(7, maxFactor)} or ${Math.min(4, maxFactor)} × ${state.selectedTable}). Exactly <strong>36 questions</strong> in <strong>5 minutes</strong>!`;
+    }
+
+    function generateQuestions(tableNumber) {
+      const maxFactor = tableNumber >= 11 ? 12 : 10;
+      const questionPool = [];
+
+      // Generate all core combinations for the table
+      for (let factor = 1; factor <= maxFactor; factor++) {
+        // Form 1: Table x Factor
+        questionPool.push({
+          num1: tableNumber,
+          num2: factor,
+          answer: tableNumber * factor
+        });
+        // Form 2: Factor x Table (reinforcing commutativity)
+        if (factor !== tableNumber) {
+          questionPool.push({
+            num1: factor,
+            num2: tableNumber,
+            answer: factor * tableNumber
+          });
+        }
+      }
+
+      // Fill or trim up to exactly 36 questions
+      const generated = [];
+      while (generated.length < TOTAL_QUESTIONS) {
+        // Shuffle pool
+        const shuffled = [...questionPool].sort(() => Math.random() - 0.5);
+        for (const item of shuffled) {
+          if (generated.length < TOTAL_QUESTIONS) {
+            generated.push({ ...item });
+          } else {
+            break;
+          }
+        }
+      }
+      return generated;
+    }
+
+    function startQuiz() {
+      initAudio();
+      state.questions = generateQuestions(state.selectedTable);
+      state.currentQuestionIndex = 0;
+      state.score = 0;
+      state.missedQuestions = [];
+      state.timeRemaining = QUIZ_DURATION_SECONDS;
+      state.isQuizActive = true;
+
+      selectionScreen.classList.add('hidden');
+      resultsScreen.classList.add('hidden');
+      quizScreen.classList.remove('hidden');
+
+      displayQuestion();
+      updateHUD();
+      startTimer();
+      focusInput();
+    }
+
+    function startTimer() {
+      if (state.timerInterval) clearInterval(state.timerInterval);
+      state.timerInterval = setInterval(() => {
+        state.timeRemaining--;
+        updateTimerDisplay();
+
+        if (state.timeRemaining <= 0) {
+          clearInterval(state.timerInterval);
+          finishQuiz(true); // timed out
+        }
+      }, 1000);
+      updateTimerDisplay();
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay() {
+      timerTextEl.textContent = formatTime(state.timeRemaining);
+      
+      // Color adjustments for urgency
+      if (state.timeRemaining <= 30) {
+        timerContainerEl.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-black text-lg sm:text-xl bg-rose-100 text-rose-700 border-2 border-rose-300 animate-pulse';
+      } else if (state.timeRemaining <= 60) {
+        timerContainerEl.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-black text-lg sm:text-xl bg-amber-100 text-amber-700 border-2 border-amber-300';
+      } else {
+        timerContainerEl.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-black text-lg sm:text-xl bg-slate-100 text-slate-800 border-2 border-slate-200';
+      }
+    }
+
+    function updateHUD() {
+      currentQuestionNumEl.textContent = state.currentQuestionIndex + 1;
+      liveScoreCountEl.textContent = state.score;
+      const progressPercent = ((state.currentQuestionIndex) / TOTAL_QUESTIONS) * 100;
+      progressBarEl.style.width = `${progressPercent}%`;
+    }
+
+    function focusInput() {
+      setTimeout(() => {
+        answerInput.value = '';
+        pendingAnswerEl.textContent = '?';
+        answerInput.focus();
+      }, 50);
+    }
+
+    function displayQuestion() {
+      const q = state.questions[state.currentQuestionIndex];
+      numAEl.textContent = q.num1;
+      numBEl.textContent = q.num2;
+      pendingAnswerEl.textContent = '?';
+      answerInput.value = '';
+      updateHUD();
+      
+      // Reset bubble
+      feedbackBubble.className = 'absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none transition-all duration-300 font-extrabold text-sm px-4 py-1 rounded-full shadow-md';
+    }
+
+    function showFeedback(isCorrect, rightAnswer) {
+      if (isCorrect) {
+        feedbackBubble.textContent = ['Awesome! ⭐', 'Super Fast! ⚡', 'Got it! 🎉', 'You Rock! 🚀'][Math.floor(Math.random() * 4)];
+        feedbackBubble.className = 'absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white font-extrabold text-sm px-4 py-1 rounded-full shadow-md opacity-100 transform -translate-y-1 transition-all duration-200 animate-pop';
+        questionContainer.classList.add('bg-emerald-50/70', 'border-emerald-200');
+        setTimeout(() => {
+          questionContainer.classList.remove('bg-emerald-50/70', 'border-emerald-200');
+        }, 350);
+      } else {
+        feedbackBubble.textContent = `Correct was ${rightAnswer} 💡 Keep going!`;
+        feedbackBubble.className = 'absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white font-extrabold text-sm px-4 py-1 rounded-full shadow-md opacity-100 transform -translate-y-1 transition-all duration-200 animate-wiggle';
+        questionContainer.classList.add('animate-wiggle');
+        setTimeout(() => {
+          questionContainer.classList.remove('animate-wiggle');
+        }, 400);
+      }
+    }
+
+    function submitAnswer() {
+      if (!state.isQuizActive) return;
+      const rawVal = answerInput.value.trim();
+      if (rawVal === '') return; // Don't submit blank
+
+      const userAns = parseInt(rawVal, 10);
+      const q = state.questions[state.currentQuestionIndex];
+      const isCorrect = userAns === q.answer;
+
+      if (isCorrect) {
+        state.score++;
+        playSuccessChime();
+        showFeedback(true);
+      } else {
+        playIncorrectSound();
+        showFeedback(false, q.answer);
+        state.missedQuestions.push({
+          num1: q.num1,
+          num2: q.num2,
+          correct: q.answer,
+          userGiven: isNaN(userAns) ? 'No answer' : userAns
+        });
+      }
+
+      state.currentQuestionIndex++;
+
+      if (state.currentQuestionIndex >= TOTAL_QUESTIONS) {
+        setTimeout(() => finishQuiz(false), 300);
+      } else {
+        setTimeout(() => {
+          displayQuestion();
+          focusInput();
+        }, 250);
+      }
+    }
+
+    function finishQuiz(timedOut = false) {
+      state.isQuizActive = false;
+      if (state.timerInterval) clearInterval(state.timerInterval);
+
+      quizScreen.classList.add('hidden');
+      resultsScreen.classList.remove('hidden');
+
+      const timeSpent = QUIZ_DURATION_SECONDS - Math.max(0, state.timeRemaining);
+      finalTimeEl.textContent = formatTime(timeSpent);
+      finalScoreEl.textContent = state.score;
+      const accuracy = Math.round((state.score / TOTAL_QUESTIONS) * 100);
+      finalAccuracyEl.textContent = `${accuracy}%`;
+
+      // Star Awards System
+      // 3-Star Grand Master (34-36 correct)
+      // 2-Star Math Champion (28-33 correct)
+      // 1-Star Rising Star (under 28)
+      let starHtml = '';
+      let title = '';
+      let subtitle = '';
+
+      if (state.score >= 34) {
+        starHtml = '⭐ ⭐ ⭐';
+        title = '🌟 3-Star Grand Master! 🌟';
+        subtitle = `Incredible mastery! You conquered the ${state.selectedTable} times table!`;
+        launchCelebrationConfetti(true);
+      } else if (state.score >= 28) {
+        starHtml = '⭐ ⭐ <span class="opacity-30">⭐</span>';
+        title = '🎉 2-Star Math Champion! 🎉';
+        subtitle = `Super job! You are so close to a perfect 3-star badge!`;
+        launchCelebrationConfetti(false);
+      } else {
+        starHtml = '⭐ <span class="opacity-30">⭐</span> <span class="opacity-30">⭐</span>';
+        title = '🌱 1-Star Rising Star! 🌱';
+        subtitle = `Great practice session! With a little more practice, you will reach 3 stars!`;
+        playTone(392, 'triangle', 0.3, 0.15);
+      }
+
+      if (timedOut) {
+        subtitle += ' (Time ran out, but every attempt makes you stronger!)';
+      }
+
+      starAwardDisplayEl.innerHTML = starHtml;
+      resultTitleEl.textContent = title;
+      resultSubtitleEl.textContent = subtitle;
+
+      // Render Missed Questions Breakdown
+      missedListEl.innerHTML = '';
+      if (state.missedQuestions.length === 0) {
+        reviewContainerEl.className = 'text-center bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 mb-6';
+        reviewContainerEl.innerHTML = `
+          <div class="text-emerald-700 font-extrabold text-lg">💯 Flawless Quiz!</div>
+          <div class="text-emerald-600 text-sm mt-0.5">You didn't miss a single question! Amazing work!</div>
+        `;
+      } else {
+        reviewContainerEl.className = 'text-left bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 mb-6';
+        reviewContainerEl.innerHTML = `
+          <h3 class="font-extrabold text-slate-800 text-base mb-2 flex items-center gap-1.5">
+            <span>📝</span> Facts to Review (${state.missedQuestions.length}):
+          </h3>
+          <div id="missedList" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-1"></div>
+        `;
+        const listContainer = document.getElementById('missedList');
+        
+        // Remove duplicate facts for clean review
+        const uniqueMisses = [];
+        const seen = new Set();
+        for (const item of state.missedQuestions) {
+          const key = `${item.num1}x${item.num2}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueMisses.push(item);
+          }
+        }
+
+        uniqueMisses.forEach(m => {
+          const badge = document.createElement('div');
+          badge.className = 'bg-white border-2 border-indigo-200 text-indigo-900 px-3 py-1.5 rounded-xl font-black text-sm shadow-sm flex items-center gap-1.5';
+          badge.innerHTML = `<span>${m.num1} × ${m.num2} =</span> <span class="text-emerald-600 font-extrabold text-base">${m.correct}</span>`;
+          listContainer.appendChild(badge);
+        });
+      }
+    }
+
+    function launchCelebrationConfetti(isGrand) {
+      playGrandTada();
+      if (typeof confetti === 'function') {
+        const count = isGrand ? 120 : 60;
+        confetti({
+          particleCount: count,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#4f46e5', '#ec4899', '#10b981', '#f59e0b', '#3b82f6']
+        });
+        if (isGrand) {
+          setTimeout(() => {
+            confetti({
+              particleCount: 80,
+              angle: 60,
+              spread: 55,
+              origin: { x: 0 }
+            });
+            confetti({
+              particleCount: 80,
+              angle: 120,
+              spread: 55,
+              origin: { x: 1 }
+            });
+          }, 350);
+        }
+      }
+    }
+
+    function setupEventListeners() {
+      // Sound Toggle
+      soundToggleBtn.addEventListener('click', () => {
+        isSoundMuted = !isSoundMuted;
+        soundIcon.textContent = isSoundMuted ? '🔇' : '🔊';
+        soundText.textContent = isSoundMuted ? 'Sound Off' : 'Sound On';
+        if (!isSoundMuted) initAudio();
+      });
+
+      // Start Button
+      startQuizBtn.addEventListener('click', startQuiz);
+
+      // Input synchronization with equation preview
+      answerInput.addEventListener('input', (e) => {
+        pendingAnswerEl.textContent = e.target.value.trim() !== '' ? e.target.value : '?';
+      });
+
+      // Chromebook keyboard support (Enter to submit)
+      answerInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitAnswer();
+        }
+      });
+
+      submitAnswerBtn.addEventListener('click', submitAnswer);
+
+      // On-screen Numpad interaction
+      document.querySelectorAll('.numpad-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          const val = btn.dataset.val;
+          if (answerInput.value.length < 5) {
+            answerInput.value += val;
+            pendingAnswerEl.textContent = answerInput.value;
+          }
+          playTone(550, 'sine', 0.05, 0.06);
+          answerInput.focus();
+        });
+      });
+
+      // Clear button
+      document.getElementById('numClearBtn').addEventListener('click', () => {
+        answerInput.value = '';
+        pendingAnswerEl.textContent = '?';
+        playTone(350, 'sine', 0.05, 0.06);
+        answerInput.focus();
+      });
+
+      // Backspace button
+      document.getElementById('numBackBtn').addEventListener('click', () => {
+        answerInput.value = answerInput.value.slice(0, -1);
+        pendingAnswerEl.textContent = answerInput.value.trim() !== '' ? answerInput.value : '?';
+        playTone(350, 'sine', 0.05, 0.06);
+        answerInput.focus();
+      });
+
+      // Result screen actions
+      retrySameTableBtn.addEventListener('click', () => {
+        startQuiz();
+      });
+
+      chooseDifferentTableBtn.addEventListener('click', () => {
+        resultsScreen.classList.add('hidden');
+        quizScreen.classList.add('hidden');
+        selectionScreen.classList.remove('hidden');
+      });
+    }
+
+    // Initialize application on load
+    window.onload = function() {
+      renderTableSelector();
+      setupEventListeners();
+    };
+  </script>
+</body>
+</html>
